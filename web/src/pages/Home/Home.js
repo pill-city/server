@@ -6,6 +6,9 @@ import NotificationDropdown from "../../components/NotificationDropdown/Notifica
 import {useMediaQuery} from "react-responsive";
 import MobileNewPost from "../../components/MobileNewPost/MobileNewPost";
 import About from "../../components/About/About";
+import NavBar from "../../components/NavBar/NavBar";
+import useApi from "../../hoc/useApi";
+import useAuthRedirect from "../../hoc/useAuthRedirect";
 
 export default (props) => {
   const [loading, updateLoading] = useState(true)
@@ -14,19 +17,20 @@ export default (props) => {
   const [me, updateMe] = useState(null)
   const [resharePostData, updateResharePostData] = useState(null)
   const [mobileNewPostOpened, updateMobileNewPostOpened] = useState(false)
-
   const isTabletOrMobile = useMediaQuery({query: '(max-width: 750px)'})
+  const authentication = useAuthRedirect()
+  const api = useApi()
 
   useEffect(async () => {
-    updateMe(await props.api.getMe())
-    updatePosts(await props.api.getHome())
-    updateCircles(await props.api.getCircles())
+    updateMe(await api.getMe())
+    updatePosts(await api.getHome())
+    updateCircles(await api.getCircles())
     updateLoading(false)
   }, [])
 
   const loadMorePosts = async () => {
     const lastPost = posts[posts.length - 1]
-    const newPosts = await props.api.getHome(lastPost['id'])
+    const newPosts = await api.getHome(lastPost['id'])
     if (newPosts.length !== 0) {
       updatePosts(posts.concat(newPosts))
     } else {
@@ -42,7 +46,7 @@ export default (props) => {
     } else {
       let postElements = []
       for (let i = 0; i < posts.length; i++) {
-        postElements.push(<Post key={i} data={posts[i]} me={me} api={props.api}
+        postElements.push(<Post key={i} data={posts[i]} me={me} api={api}
                                 hasNewPostModal={isTabletOrMobile}
                                 updateResharePostData={updateResharePostData}
                                 newPostOpened={mobileNewPostOpened}
@@ -59,28 +63,33 @@ export default (props) => {
     }
   }
 
+  const Home = () => {
+    return (
+      <div className="home-wrapper">
+        <div className="home-posts-wrapper">
+          {homePostElement()}
+        </div>
+        {isTabletOrMobile && <MobileNewPost circles={circles}
+                                            me={me}
+                                            api={api}
+                                            resharePostData={resharePostData}
+                                            updateResharePostData={updateResharePostData}
+                                            newPostOpened={mobileNewPostOpened}
+                                            updateNewPostOpened={updateMobileNewPostOpened}
+        />}
+        {!isTabletOrMobile && <div className="home-right-column-container">
+          <NewPost circles={circles}
+                   me={me}
+                   api={api}
+                   resharePostData={resharePostData}
+                   updateResharePostData={updateResharePostData}/>
+          <NotificationDropdown api={api}/>
+          <About api={api}/>
+        </div>}
+      </div>)
+  }
+
   return (
-    <div className="home-wrapper">
-      <div className="home-posts-wrapper">
-        {homePostElement()}
-      </div>
-      {isTabletOrMobile && <MobileNewPost circles={circles}
-                                          me={me}
-                                          api={props.api}
-                                          resharePostData={resharePostData}
-                                          updateResharePostData={updateResharePostData}
-                                          newPostOpened={mobileNewPostOpened}
-                                          updateNewPostOpened={updateMobileNewPostOpened}
-      />}
-      {!isTabletOrMobile && <div className="home-right-column-container">
-        <NewPost circles={circles}
-                 me={me}
-                 api={props.api}
-                 resharePostData={resharePostData}
-                 updateResharePostData={updateResharePostData}/>
-        <NotificationDropdown api={props.api}/>
-        <About api={props.api}/>
-      </div>}
-    </div>
+    <NavBar path='/' wrappedComponent={<Home/>}/>
   )
 }

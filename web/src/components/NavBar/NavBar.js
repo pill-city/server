@@ -1,10 +1,18 @@
-import React from 'react'
+import React, {useState} from 'react'
 import "./NavBar.css"
 import {Menu, MenuItem} from "semantic-ui-react";
 import {removeAccessToken} from "../../api/AuthStorage";
+import {Redirect} from "react-router-dom";
+import {useMediaQuery} from "react-responsive";
 
 export default (props) => {
-  const breakpoint = 750;
+  const [redirectTo, updateRedirectTo] = useState(undefined)
+  const isTabletOrMobile = useMediaQuery({query: '(max-width: 750px)'})
+
+  if (redirectTo !== undefined && redirectTo !== props.path) {
+    return <Redirect to={redirectTo}/>
+  }
+
   const WebNavBarElem = () => {
     return (
       <div>
@@ -120,40 +128,9 @@ export default (props) => {
         </div>
       </div>)
   }
-  const NavBarElem = () => {
-    const {width} = useViewport();
-
-    return width < breakpoint ? <MobileNavBarElem/> : <WebNavBarElem/>
-  }
-  const viewportContext = React.createContext({});
-
-  const ViewportProvider = ({children}) => {
-    const [width, setWidth] = React.useState(window.innerWidth);
-    const [height, setHeight] = React.useState(window.innerHeight);
-    const handleWindowResize = () => {
-      setWidth(window.innerWidth);
-      setHeight(window.innerHeight);
-    };
-
-    React.useEffect(() => {
-      window.addEventListener("resize", handleWindowResize);
-      return () => window.removeEventListener("resize", handleWindowResize);
-    }, []);
-
-    return (
-      <viewportContext.Provider value={{width, height}}>
-        {children}
-      </viewportContext.Provider>
-    );
-  };
-
-  const useViewport = () => {
-    const {width, height} = React.useContext(viewportContext);
-    return {width, height};
-  };
 
   const handleNavItemClick = (path) => {
-    props.updateRedirectTo(path)
+    updateRedirectTo(path)
   }
 
   const handleNavItemActiveClass = (path) => {
@@ -162,13 +139,11 @@ export default (props) => {
 
   const handleSignOut = () => {
     removeAccessToken()
-    props.updateRedirectTo('/signin')
+    updateRedirectTo('/signin')
   }
 
 
   return (
-    <ViewportProvider>
-      <NavBarElem/>
-    </ViewportProvider>
+    isTabletOrMobile ? <MobileNavBarElem/> : <WebNavBarElem/>
   )
 }
